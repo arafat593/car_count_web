@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Count</title>
+    <style>
+        /* Gaya dasar meniru ThemeData.dark() */
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .app-bar {
+            background-color: #000;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .app-bar-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .reset-button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .grid-container {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px;
+        }
+
+        .grid-item { 
+            aspect-ratio: 1.9; 
+            border-radius: 16px; 
+            box-shadow: 2px 2px 5px rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .grid-item:active {
+            transform: scale(0.98);
+        }
+
+        .item-title {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .item-count {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Gaya untuk setiap kendaraan */
+        .private-car { background: linear-gradient(135deg, white, #a9a9a9); color: black; box-shadow: 2px 2px 5px rgba(255, 255, 255, 0.5); }
+        .pickup { background: linear-gradient(135deg, #448aff, #2962ff); color: white; box-shadow: 2px 2px 5px rgba(41, 98, 255, 0.5); }
+        .truck { background: linear-gradient(135deg, #ffff8d, #ff9800); color: black; box-shadow: 2px 2px 5px rgba(255, 255, 0, 0.5); }
+        .bus { background: linear-gradient(135deg, #ff80ab, #e91e63); color: white; box-shadow: 2px 2px 5px rgba(233, 30, 99, 0.5); }
+        .cng { background: linear-gradient(135deg, #69f0ae, #4caf50); color: white; box-shadow: 2px 2px 5px rgba(76, 175, 80, 0.5); }
+        .auto { background: linear-gradient(135deg, #000, #a9a9a9); color: white; box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); }
+        .bike { background: linear-gradient(135deg, #ff5252, #f44336); color: white; box-shadow: 2px 2px 5px rgba(244, 67, 54, 0.5); }
+    </style>
+</head>
+<body>
+
+    <div class="app-bar">
+        <div class="app-bar-title">Car Count</div>
+        <button class="reset-button" onclick="controller.resetAll()">&#x21BB;</button>
+    </div>
+
+    <div class="grid-container" id="vehicle-grid">
+        </div>
+
+    <script>
+        // --- Simulasi data dan logika GetX/GetStorage ---
+
+        // Mirip dengan data 'vehicles' di HomeController
+        const vehicles = [
+            { "title": "Private Car", "className": "private-car", "storageKey": "PrivateCar" },
+            { "title": "Pickup", "className": "pickup", "storageKey": "Pickup" },
+            { "title": "Truck", "className": "truck", "storageKey": "Truck" },
+            { "title": "Bus", "className": "bus", "storageKey": "Bus" },
+            { "title": "CNG", "className": "cng", "storageKey": "CNG" },
+            { "title": "Auto", "className": "auto", "storageKey": "Auto" },
+            { "title": "Bike", "className": "bike", "storageKey": "Bike" },
+        ];
+
+        // Simulasi GetStorage (menggunakan localStorage browser)
+        const storage = {
+            read: (key) => {
+                const data = localStorage.getItem(key);
+                try {
+                    return JSON.parse(data);
+                } catch (e) {
+                    return null;
+                }
+            },
+            write: (key, value) => {
+                localStorage.setItem(key, JSON.stringify(value));
+            }
+        };
+
+        // Simulasi HomeController
+        const controller = {
+            counts: [],
+            vehicles: vehicles,
+            storageKey: 'counts',
+
+            // Mirip dengan onInit()
+            init: function() {
+                const storedCounts = storage.read(this.storageKey);
+                if (Array.isArray(storedCounts) && storedCounts.length === this.vehicles.length) {
+                    this.counts = storedCounts;
+                } else {
+                    this.counts = new Array(this.vehicles.length).fill(0);
+                }
+                this.renderGrid();
+            },
+
+            // Mirip dengan increment(int index)
+            increment: function(index) {
+                this.counts[index]++;
+                this.updateUI(index);
+                this.saveCounts();
+            },
+
+            // Mirip dengan resetAll()
+            resetAll: function() {
+                if(confirm("Are you sure you want to reset all counts?")) {
+                    this.counts = new Array(this.vehicles.length).fill(0);
+                    this.renderGrid(); // Render ulang seluruh grid
+                    this.saveCounts();
+                }
+            },
+
+            saveCounts: function() {
+                storage.write(this.storageKey, this.counts);
+            },
+
+            // Fungsi untuk membuat dan merender semua elemen grid
+            renderGrid: function() {
+                const gridContainer = document.getElementById('vehicle-grid');
+                gridContainer.innerHTML = ''; // Kosongkan
+                
+                this.vehicles.forEach((vehicle, index) => {
+                    const item = document.createElement('div');
+                    item.className = `grid-item ${vehicle.className}`;
+                    item.onclick = () => this.increment(index);
+                    item.id = `vehicle-${index}`; // ID untuk pembaruan cepat
+
+                    item.innerHTML = `
+                        <div class="item-title">${vehicle.title}</div>
+                        <div class="item-count" id="count-${index}">${this.counts[index]}</div>
+                    `;
+                    gridContainer.appendChild(item);
+                });
+            },
+
+            // Fungsi untuk memperbarui tampilan hitungan saja (Simulasi Obx)
+            updateUI: function(index) {
+                const countElement = document.getElementById(`count-${index}`);
+                if (countElement) {
+                    countElement.textContent = this.counts[index];
+                }
+            }
+        };
+
+        // Inisialisasi controller saat DOM dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            controller.init();
+        });
+    </script>
+</body>
+</html>
